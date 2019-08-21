@@ -10,20 +10,11 @@ from neo4j import GraphDatabase
 driver = GraphDatabase.driver("bolt://localhost:7687",
                               auth=("neo4j", "dyeurHEART"))
 
-
-def cn_user(tx, username):
-    tx.run("MERGE (:User {username: $username})", username=username)
-
-
-def add_user(s, username):
-    s.write_transaction(cn_user, username)
-
-
 def create_from_tweet(tx, tweet):
     cyphercmd = (
-        "MERGE (user:User {username: $username}) "
+        "MERGE (user:User {username: $username, is_tracked: $is_tracked}) "
         f"MERGE (tweet:Tweet{':Reply' if len(tweet['reply_to']) > 1 else ''} "
-        """{is_tracked: $is_tracked,
+        """{
         created_at: $created_at,
         replies_count: $replies_count,
         retweets_count: $retweets_count,
@@ -34,7 +25,7 @@ def create_from_tweet(tx, tweet):
         content: $content}) """
         "MERGE (date:Date {date: $date}) "
         "MERGE (tweet)-[:On_DATE]->(date) "
-        "MERGE (tz:Timezone {zone: $zone}) "
+        # "MERGE (tz:Timezone {zone: $zone}) " # This timezone is the scraper's tz, it seems :D
         "MERGE (tweet)-[:In_TZ]->(tz) "
         "MERGE (tweet)-[:TWEET_OF]->(user) ")
 
@@ -48,51 +39,43 @@ def create_from_tweet(tx, tweet):
     cyphercmd += (
         """
         FOREACH (mention in $mentions |
-        MERGE (muser:User {username: mention})
+        MERGE (muser:User {username: LOWER(mention)})
         MERGE (tweet)-[:MENTIONS]->(muser)
         )
         """
-    )
+        """
+        FOREACH (url in $urls |
+        MERGE (curl:URL {address: url})
+        MERGE (tweet)-[:HAS_URL]->(curl)
+        )
+        """
+        """
+        FOREACH (photo in $photos |
+        MERGE (cphoto:Photo {photourl: photo})
+        MERGE (tweet)-[:HAS_PHOTO]->(cphoto)
+        )
+        """
+        """
+        FOREACH (hashtag in $hashtags |
+        MERGE (chtag:Hashtag {hashtag: hashtag})
+        MERGE (tweet)-[:HAS_HASHTAG]->(chtag)
+        )
+        """
+        """
+        FOREACH (cashtag in $cashtags |
+        MERGE (cctag:Cashtag {cashtag: cashtag})
+        MERGE (tweet)-[:HAS_CASHTAG]->(cctag)
+        )
+        """
+        """
+        FOREACH (ruser in $reply_to |
+        MERGE (cuser:User {username: LOWER(ruser.username)})
+        MERGE (tweet)-[:REPLIED_TO]->(cuser)
+        )
+        """
 
-    # i = 0
-    # for mention in tweet['mentions']:
-    #     cyphercmd += (f"MERGE (mentioned{i}:User "
-    #                   "{username: '" + mention.lower() + "'}) "
-    #                   f"MERGE (tweet)-[:MENTIONS]->(mentioned{i}) ")
-    #     i += 1
-    i = 0
-    for url in tweet['urls']:
-        cyphercmd += (f"MERGE (url{i}:URL "
-                      "{address: '" +
-                      urllib.parse.quote(url.rstrip(), safe='/:?=&') + "'}) "
-                      f"MERGE (tweet)-[:HAS_URL]->(url{i}) ")
-        i += 1
-    i = 0
-    for photo in tweet['photos']:
-        cyphercmd += (f"MERGE (photo{i}:PHOTO "
-                      "{address: '" +
-                      urllib.parse.quote(photo.rstrip(), safe='/:?=&') + "'}) "
-                      f"MERGE (tweet)-[:HAS_PHOTO]->(photo{i}) ")
-        i += 1
-    i = 0
-    for hashtag in tweet['hashtags']:
-        cyphercmd += (f"MERGE (hashtag{i}:HASHTAG "
-                      "{tag: '" + hashtag + "'}) "
-                      f"MERGE (tweet)-[:HAS_HASHTAG]->(hashtag{i}) ")
-        i += 1
-    i = 0
-    for cashtag in tweet['cashtags']:
-        cyphercmd += (f"MERGE (cashtag{i}:CASHTAG "
-                      "{ctag: '" + cashtag + "'}) "
-                      f"MERGE (tweet)-[:HAS_CASHTAG]->(cashtag{i}) ")
-        i += 1
-    i = 0
-    for user in tweet['reply_to']:
-        if (user['username'].lower() != username):
-            cyphercmd += (f"MERGE (ruser{i}:User "
-                          "{username: '" + user['username'].lower() + "'}) "
-                          f"MERGE (tweet)-[:REPLIED_TO]->(ruser{i}) ")
-        i += 1
+
+    )
 
     time = neotime.gmtime(tweet['datetime'] / 1000)
     ntime = neotime.DateTime(time.tm_year, time.tm_mon, time.tm_mday,
@@ -101,6 +84,11 @@ def create_from_tweet(tx, tweet):
     tx.run(cyphercmd,
            is_tracked=True,
            mentions=tweet['mentions'],
+           reply_to=tweet['reply_to'][1:],
+           photos=tweet['photos'],
+           urls=tweet['urls'],
+           hashtags=tweet['hashtags'],
+           cashtags=tweet['cashtags'],
            is_video=(tweet['video'] == 1),
            replies_count=int(tweet['replies_count']),
            retweets_count=int(tweet['retweets_count']),

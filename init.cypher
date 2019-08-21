@@ -1,0 +1,4 @@
+CREATE CONSTRAINT ON (u:User)
+       ASSERT u.username IS UNIQUE
+CREATE CONSTRAINT ON (t:Tweet)
+       ASSERT t.link IS UNIQUE

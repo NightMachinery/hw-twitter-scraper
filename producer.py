@@ -23,7 +23,8 @@ def create_from_tweet(tx, tweet):
     cyphercmd = (
         "MERGE (user:User {username: $username}) "
         f"MERGE (tweet:Tweet{':Reply' if len(tweet['reply_to']) > 1 else ''} "
-        """{created_at: $created_at,
+        """{is_tracked: $is_tracked,
+        created_at: $created_at,
         replies_count: $replies_count,
         retweets_count: $retweets_count,
         likes_count: $likes_count,
@@ -44,12 +45,21 @@ def create_from_tweet(tx, tweet):
     if tweet['quote_url'] != '':
         cyphercmd += ("MERGE (quoted_tweet:Tweet {link: $quote_url}) "
                       "MERGE (tweet)-[:QUOTES]->(quoted_tweet) ")
-    i = 0
-    for mention in tweet['mentions']:
-        cyphercmd += (f"MERGE (mentioned{i}:User "
-                      "{username: '" + mention.lower() + "'}) "
-                      f"MERGE (tweet)-[:MENTIONS]->(mentioned{i}) ")
-        i += 1
+    cyphercmd += (
+        """
+        FOREACH (mention in $mentions |
+        MERGE (muser:User {username: mention})
+        MERGE (tweet)-[:MENTIONS]->(muser)
+        )
+        """
+    )
+
+    # i = 0
+    # for mention in tweet['mentions']:
+    #     cyphercmd += (f"MERGE (mentioned{i}:User "
+    #                   "{username: '" + mention.lower() + "'}) "
+    #                   f"MERGE (tweet)-[:MENTIONS]->(mentioned{i}) ")
+    #     i += 1
     i = 0
     for url in tweet['urls']:
         cyphercmd += (f"MERGE (url{i}:URL "
@@ -89,6 +99,8 @@ def create_from_tweet(tx, tweet):
                              time.tm_hour, time.tm_min, time.tm_sec, pytz.utc)
     # embed()
     tx.run(cyphercmd,
+           is_tracked=True,
+           mentions=tweet['mentions'],
            is_video=(tweet['video'] == 1),
            replies_count=int(tweet['replies_count']),
            retweets_count=int(tweet['retweets_count']),
@@ -131,7 +143,7 @@ module.Json = Json
 with driver.session() as s:
     # ses=s
     c = twint.Config()
-    username = sys.argv[1]
+    username = sys.argv[1].lower()
     c.Username = username
     # add_user(s, c.Username)
     c.Store_json = True

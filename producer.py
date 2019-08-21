@@ -26,7 +26,7 @@ def create_from_tweet(tx, tweet):
         "MERGE (date:Date {date: $date}) "
         "MERGE (tweet)-[:On_DATE]->(date) "
         # "MERGE (tz:Timezone {zone: $zone}) " # This timezone is the scraper's tz, it seems :D
-        "MERGE (tweet)-[:In_TZ]->(tz) "
+        # "MERGE (tweet)-[:In_TZ]->(tz) "
         "MERGE (tweet)-[:TWEET_OF]->(user) ")
 
     if tweet['place'] != '':

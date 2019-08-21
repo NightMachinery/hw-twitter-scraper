@@ -24,6 +24,11 @@ def create_from_tweet(tx, tweet):
         "MERGE (user:User {username: $username}) "
         f"MERGE (tweet:Tweet{':Reply' if len(tweet['reply_to']) > 1 else ''} "
         """{created_at: $created_at,
+        replies_count: $replies_count,
+        retweets_count: $retweets_count,
+        likes_count: $likes_count,
+        link: $link,
+        is_retweet: $is_retweet,
         is_video: $is_video,
         content: $content}) """
         "MERGE (date:Date {date: $date}) "
@@ -32,22 +37,31 @@ def create_from_tweet(tx, tweet):
         "MERGE (tweet)-[:In_TZ]->(tz) "
         "MERGE (tweet)-[:TWEET_OF]->(user) ")
 
+    if tweet['place'] != '':
+        cyphercmd += ("MERGE (place:Place {location: $place}) "
+                      "MERGE (tweet)-[:IN_PLACE]->(place) ")
+
+    if tweet['quote_url'] != '':
+        cyphercmd += ("MERGE (quoted_tweet:Tweet {link: $quote_url}) "
+                      "MERGE (tweet)-[:QUOTES]->(quoted_tweet) ")
     i = 0
     for mention in tweet['mentions']:
         cyphercmd += (f"MERGE (mentioned{i}:User "
-                      "{username: '" + mention + "'}) "
+                      "{username: '" + mention.lower() + "'}) "
                       f"MERGE (tweet)-[:MENTIONS]->(mentioned{i}) ")
         i += 1
     i = 0
     for url in tweet['urls']:
         cyphercmd += (f"MERGE (url{i}:URL "
-                      "{address: '" + urllib.parse.quote(url.rstrip(), safe='/:?=&') + "'}) "
+                      "{address: '" +
+                      urllib.parse.quote(url.rstrip(), safe='/:?=&') + "'}) "
                       f"MERGE (tweet)-[:HAS_URL]->(url{i}) ")
         i += 1
     i = 0
     for photo in tweet['photos']:
         cyphercmd += (f"MERGE (photo{i}:PHOTO "
-                      "{address: '" + urllib.parse.quote(photo.rstrip(), safe='/:?=&') + "'}) "
+                      "{address: '" +
+                      urllib.parse.quote(photo.rstrip(), safe='/:?=&') + "'}) "
                       f"MERGE (tweet)-[:HAS_PHOTO]->(photo{i}) ")
         i += 1
     i = 0
@@ -62,21 +76,32 @@ def create_from_tweet(tx, tweet):
                       "{ctag: '" + cashtag + "'}) "
                       f"MERGE (tweet)-[:HAS_CASHTAG]->(cashtag{i}) ")
         i += 1
-         
+    i = 0
+    for user in tweet['reply_to']:
+        if (user['username'].lower() != username):
+            cyphercmd += (f"MERGE (ruser{i}:User "
+                          "{username: '" + user['username'].lower() + "'}) "
+                          f"MERGE (tweet)-[:REPLIED_TO]->(ruser{i}) ")
+        i += 1
 
-
-    time = neotime.gmtime(tweet['datetime']/1000)
+    time = neotime.gmtime(tweet['datetime'] / 1000)
     ntime = neotime.DateTime(time.tm_year, time.tm_mon, time.tm_mday,
-                             time.tm_hour, time.tm_min, time.tm_sec,
-                             pytz.utc)
+                             time.tm_hour, time.tm_min, time.tm_sec, pytz.utc)
     # embed()
     tx.run(cyphercmd,
-           is_video=(tweet['video']==1)
+           is_video=(tweet['video'] == 1),
+           replies_count=int(tweet['replies_count']),
+           retweets_count=int(tweet['retweets_count']),
+           likes_count=int(tweet['likes_count']),
+           link=tweet['link'],
+           is_retweet=tweet['retweet'],
+           quote_url=tweet['quote_url'],
+           place=tweet['place'],
            created_at=ntime,
            zone=tweet['timezone'],
            content=str(tweet['tweet']),
            date=tweet['datestamp'],
-           username=str(tweet['username']))
+           username=str(tweet['username']).lower())
 
 
 def add_from_tweet(s, tweet):
@@ -106,8 +131,9 @@ module.Json = Json
 with driver.session() as s:
     # ses=s
     c = twint.Config()
-    c.Username = sys.argv[1]
-    add_user(s, c.Username)
+    username = sys.argv[1]
+    c.Username = username
+    # add_user(s, c.Username)
     c.Store_json = True
     # c.Custom["user"] = ["tweet", "username", "hashtags", "mentions"]
     c.Output = "tweets.json"

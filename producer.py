@@ -7,8 +7,8 @@ import twint
 import json
 from neo4j import GraphDatabase
 
-driver = GraphDatabase.driver("bolt://localhost:7687",
-                              auth=("neo4j", "dyeurHEART"))
+driver = GraphDatabase.driver("bolt+routing://localhost:7687",
+                              auth=("neo4j", "changeme"))
 
 def create_from_tweet(tx, tweet):
     cyphercmd = (

@@ -8,18 +8,20 @@ Usage:
  interrogatrix.py usertweets <username> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...]
  interrogatrix.py show-node <id>
  interrogatrix.py show-rel <id>
+ interrogatrix.py on-date <yyyy-mm-dd> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...]
  interrogatrix.py -h | --help
  interrogatrix.py --version
 
 Options:
   -h --help     Show this screen.
   --version     Show version.
-  --limit-likes Limit like count. This will be injected directly into the query. You can,e.g., use `'> 150'`.
+  -l, --limit-likes Limit like count. This will be injected directly into the query. You can,e.g., use `'> 150'`.
   -r, --limit-replies ↑
   -w, --limit-retweets ↑
   -c, --cypher-condition Allows you to add arbitrary cypher conditions.
 
 Examples:
+  interrogatrix.py on-date 2019-08-29
   interrogatrix.py usertweets danieldennett --limit-retweets '> 10' --limit-likes '> 50' --limit-replies '> 10' -c 'tweet.created_at > datetime({year:2019,month:1})'
 """
 import sys, os
@@ -43,6 +45,12 @@ def add_cypher(query, **kwargs):
             MATCH tweet_out=(tweet)-->()
             """
         )
+    elif query == 'on-date':
+        cyph += f"""
+        MATCH (date:Date {{date: "{kwargs['date']}"}})
+        MATCH tweet_rel=(tweet:Tweet)-[:ON_DATE]->(date)
+        MATCH tweet_out=(tweet)-->()
+        """
     elif query == "limit_likes":
         cyph+= f""" AND tweet.likes_count {kwargs['count']} """
     elif query == "limit_replies":
@@ -63,9 +71,8 @@ def add_cypher(query, **kwargs):
         RETURN r
         """
 
-
-if args['usertweets']:
-    add_cypher('usertweets', username=args['<username>'])
+def add_tweet_constraints():
+    global cyph
     cyph += " WHERE TRUE "
     if args['--limit-likes']:
         add_cypher('limit_likes', count=args['--limit-likes'])
@@ -75,9 +82,17 @@ if args['usertweets']:
         add_cypher('limit_replies', count=args['--limit-replies'])
     if args['--cypher-condition']:
         add_cypher('conditions', conditions=args['--cypher-condition'])
+
+if args['usertweets']:
+    add_cypher('usertweets', username=args['<username>'])
+    add_tweet_constraints()
     cyph+=' RETURN tweet_rel, tweet_out '
 elif args['show-rel']:
     add_cypher('show-rel', id=args['<id>'])
 elif args['show-node']:
     add_cypher('show-node', id=args['<id>'])
+elif args['on-date']:
+    add_cypher('on-date', date=args['<yyyy-mm-dd>'])
+    add_tweet_constraints()
+    cyph+=' RETURN tweet_rel, tweet_out '
 print(cyph + " ;")

@@ -13,18 +13,18 @@ driver = GraphDatabase.driver("bolt+routing://localhost:7687",
 def create_from_tweet(tx, tweet):
     cyphercmd = (
         "MERGE (user:User {username: $username, is_tracked: $is_tracked}) "
-        f"MERGE (tweet:Tweet{':Reply' if len(tweet['reply_to']) > 1 else ''} "
-        """{
+        f"""MERGE (tweet:Tweet {{link: $link}})
+        {'SET tweet :Reply' if len(tweet['reply_to']) > 1 else ''}
+        SET tweet += {{
         created_at: $created_at,
         replies_count: $replies_count,
         retweets_count: $retweets_count,
         likes_count: $likes_count,
-        link: $link,
         is_retweet: $is_retweet,
         is_video: $is_video,
-        content: $content}) """
+        content: $content}} """
         "MERGE (date:Date {date: $date}) "
-        "MERGE (tweet)-[:On_DATE]->(date) "
+        "MERGE (tweet)-[:ON_DATE]->(date) "
         # "MERGE (tz:Timezone {zone: $zone}) " # This timezone is the scraper's tz, it seems :D
         # "MERGE (tweet)-[:In_TZ]->(tz) "
         "MERGE (tweet)-[:TWEET_OF]->(user) ")

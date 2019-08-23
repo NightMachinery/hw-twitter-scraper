@@ -5,6 +5,7 @@ t2n; twint2neo4j; Scrapes Twitter and saves to neo4j.
 Usage:
  t2n usertweets <username>
  t2n userinfo <username>
+ t2n userfollowgraph <username>
  t2n -h | --help
  t2n --version
 
@@ -66,8 +67,20 @@ def merge_userinfo(tx, info):
     join_time_py = parse(info['join_time'])
     join_time = neotime.Time(join_time_py.hour, join_time_py.minute,
                              join_time_py.second)
+    if isFollower:
+        cyphercmd += f"""
+        MERGE (orig:User {{username: $orig}})
+        MERGE (user)-[:FOLLOWS]->(orig)
+        """
+    if isFollowing:
+        cyphercmd += f"""
+        MERGE (orig:User {{username: $orig}})
+        MERGE (orig)-[:FOLLOWS]->(user)
+        """
+
     # embed()
     tx.run(cyphercmd,
+           orig=username,
            username=str(info['username']).lower(),
            name=info['name'],
            bio=info['bio'],
@@ -196,21 +209,26 @@ module = sys.modules["twint.storage.write"]
 
 def Json(obj, config):
     tweet = obj.__dict__
+    # embed()
     if args['usertweets']:
         add_from_tweet(s, tweet)
     elif args['userinfo']:
+        add_userinfo(s, tweet)
+    elif args['userfollowgraph']:
         add_userinfo(s, tweet)
 
 
 module.Json = Json
 
+
 def twint2neo4j(iargs):
-    global args
+    global args, isFollowing, isFollower, s, username
+    isFollower = False
+    isFollowing = False
     args = iargs
     if os.getenv('DEBUGME', '') != '':
         print(args, file=sys.stderr)
     with driver.session() as ses:
-        global s
         s = ses
         c = twint.Config()
         username = args['<username>']
@@ -219,12 +237,20 @@ def twint2neo4j(iargs):
         c.Output = "tweets.json"
         c.Since = "2011-05-20"
         c.Hide_output = True
+        c.User_full = True
         if args['usertweets']:
             twint.run.Search(c)
         if args['userinfo']:
             twint.run.Lookup(c)
+        if args['userfollowgraph']:
+            isFollowing = True
+            twint.run.Following(c)
+            isFollowing = False
+            isFollower = True
+            twint.run.Followers(c)
+            isFollower = False
+
 
 if __name__ == '__main__':
     iargs = docopt(__doc__, version='t2n v0.1')
     twint2neo4j(iargs)
-

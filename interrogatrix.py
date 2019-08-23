@@ -5,7 +5,7 @@ interrogatrix.py
 A highlevel API for our Twitter graph. Returns cypher queries.
 
 Usage:
- interrogatrix.py userinfo <username> ... [options]
+ interrogatrix.py userinfo <username> ... [--no-deep] [--limit-followees=<int>] [--limit-followers=<int>] [options]
  interrogatrix.py usertweets <username> ... [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what> --ascending] [options]
  interrogatrix.py show-node <id> [options]
  interrogatrix.py show-rel <id> [options]
@@ -13,9 +13,17 @@ Usage:
  interrogatrix.py -h | --help
  interrogatrix.py --version
 
-Options:
+General Options:
   -h --help  Show this screen.
   --version  Show version.
+  -e, --cypher-shell  Output parameters suitable for cypher-shell's consumption (on stdout).
+
+userinfo:
+  --no-deep  Hides out-rels of followers and followees.
+  --limit-followees <a>  Limits the number of returned followees. [default: 30]
+  --limit-followers <a>  Limits the number of returned followers. [default: 30]
+
+usertweets, on-date:
   -l <a>, --limit-likes <a>  Limit like count. This will be injected directly into the query. You can,e.g., use `'> 150'`. If you use a number, interrogatrix will automagically change it to `'>= NUMBER'`.
   -r <a>, --limit-replies <a>  ↑
   -w <a>, --limit-retweets <a>  ↑
@@ -23,7 +31,7 @@ Options:
   -n <a>, --return <a>  The number of results to return.
   -s <a>, --sort <a>  Sort by `date`, `like`, `retweet`, or `replies`.
   -a, --ascending  Change the sort order to ascending.
-  -e, --cypher-shell  Output parameters suitable for cypher-shell's consumption (on stdout).
+
 
 Examples:
   interrogatrix.py on-date 2019-08-29
@@ -37,6 +45,7 @@ Warning:
  https://github.com/neo4j/neo4j-browser/issues/693
 
 Todos:
+Support query chaining
 Add Python API
 Parametrize queries
 Make queries FOREACHy
@@ -46,7 +55,7 @@ user-followings-most-used-hashtag
 get-mutuals
 user-most-interactions (Uses mutual mentions)
 """
-import sys, os, inspect, json
+import sys, os, re, json
 from IPython import embed
 from docopt import docopt
 args = docopt(__doc__, version='interrogatrix v0.1')
@@ -64,13 +73,13 @@ def add_cypher(query, **kwargs):
     if query == "usertweets":
         cyph += (f"""
             MATCH (user:User)
-            WHERE TOLOWER(user.username) in [un in $username | TOLOWER(un)]
-            MATCH tweet_rel=(tweet:Tweet)-[:TWEET_OF]->(user)
+            WHERE user.username in [un in $username | TOLOWER(un)]
+            OPTIONAL MATCH tweet_rel=(tweet:Tweet)-[:TWEET_OF]->(user)
             """)
     elif query == 'on-date':
         cyph += f"""
         MATCH (date:Date {{date: $date}})
-        MATCH tweet_rel=(tweet:Tweet)-[:ON_DATE]->(date)
+        OPTIONAL MATCH tweet_rel=(tweet:Tweet)-[:ON_DATE]->(date)
         """
     elif query == "limit_likes":
         cyph += f""" AND tweet.likes_count {kwargs['count']} """
@@ -93,10 +102,6 @@ def add_cypher(query, **kwargs):
         WHERE ID(n) = $id
         RETURN r
         """
-    clean_cyph()
-def clean_cyph():
-    global cyph
-    cyph = inspect.cleandoc(cyph)
 
 
 def add_tweet_constraints():
@@ -115,7 +120,7 @@ def add_tweet_constraints():
 def add_sort():
     sort_by = args['--sort']
     if not sort_by:
-        return 
+        return
     global cyph
     cyph += "\nORDER BY "
     if sort_by.startswith('like'):
@@ -142,8 +147,9 @@ def add_extra_tweet():
     cyph += '\nWITH tweet_rel , tweet'
     add_sort()
     add_limit()
-    cyph += '\nMATCH tweet_out=(tweet)-->()'
+    cyph += '\nOPTIONAL MATCH tweet_out=(tweet)-->()'
     cyph += '\nRETURN tweet_rel, tweet_out '
+
 
 def add_params_str(**kwargs):
     global cyph
@@ -155,9 +161,11 @@ def add_params_str(**kwargs):
                 continue
             cyph += f"""
             :param {key} => {json.dumps(value)} ;"""
-        clean_cyph()
 
-add_params_str(username=args['<username>'], date=args['<yyyy-mm-dd>'], id=args['<id>'])
+
+add_params_str(username=args['<username>'],
+               date=args['<yyyy-mm-dd>'],
+               id=args['<id>'], limit_followers=args['--limit-followers'], limit_followees=args['--limit-followees'])
 if args['usertweets']:
     add_cypher('usertweets')
     add_extra_tweet()
@@ -171,8 +179,17 @@ elif args['on-date']:
 elif args['userinfo']:
     cyph += f"""
     MATCH (user:User)
-    WHERE TOLOWER(user.username) in [un in $username | TOLOWER(un)]
-    MATCH user_out=(user)-->()
-    RETURN user, user_out"""
+    WHERE user.username in [un in $username | TOLOWER(un)]
+    OPTIONAL MATCH user_out=(user)-->(uc)
+    WHERE NOT (user)-[:FOLLOWS]->(uc)
+    CALL apoc.path.subgraphNodes(user, {{relationshipFilter: 'FOLLOWS>', labelFilter: '/User', limit: $limit_followees}}) yield node as f1
+    CALL apoc.path.subgraphNodes(user, {{relationshipFilter: '<FOLLOWS', labelFilter: '/User', limit: $limit_followers}}) yield node as f2
+    """
+    if not args['--no-deep']:
+        cyph += """
+        OPTIONAL MATCH uc_out=(f0)-->()
+        WHERE f0 in [f1, f2]
+        """
+    cyph += """RETURN *"""
 cyph += " ;"
-print(cyph)
+print(re.sub(r'^\s*', '', cyph, flags=re.M))

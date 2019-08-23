@@ -12,6 +12,7 @@ Options:
   -h --help     Show this screen.
   --version     Show version.
 """
+import sys, os
 from docopt import docopt
 import urllib.parse
 import pytz
@@ -21,13 +22,9 @@ import twint
 import json
 from neo4j import GraphDatabase
 
-args = docopt(__doc__, version='t2n v0.1')
-driver = GraphDatabase.driver("bolt+routing://localhost:7687",
-                              auth=("neo4j", "changeme"))
 
 def merge_userinfo(tx, info):
-    cyphercmd = (
-        f"""
+    cyphercmd = (f"""
         MERGE (user:User {{username: $username}})
         SET user += {{name: $name,
         bio: $bio,
@@ -41,15 +38,14 @@ def merge_userinfo(tx, info):
         join_date: $join_date,
         join_time: $join_time
         }}
-        """
-        )
+        """)
     if info['background_image']:
-        cyphercmd+= f"""
+        cyphercmd += f"""
         MERGE (background_image:Photo {{photourl: $background_image}})
         MERGE (user)-[:HAS_BACKGROUND_IMAGE]->(background_image)
         """
     if info['avatar']:
-        cyphercmd+= f"""
+        cyphercmd += f"""
         MERGE (avatar:Photo {{photourl: $avatar}})
         MERGE (user)-[:HAS_AVATAR]->(avatar)
         """
@@ -59,15 +55,17 @@ def merge_userinfo(tx, info):
         MERGE (user)-[:HAS_URL]->(url)
         """
     if info['location']:
-        cyphercmd+= f"""
+        cyphercmd += f"""
         MERGE (loc:Place {{location: $location}})
         MERGE (user)-[:IN_PLACE]->(loc)
         """
     from dateutil.parser import parse
     join_date_py = parse(info['join_date'])
-    join_date = neotime.Date(join_date_py.year, join_date_py.month, join_date_py.day)
+    join_date = neotime.Date(join_date_py.year, join_date_py.month,
+                             join_date_py.day)
     join_time_py = parse(info['join_time'])
-    join_time = neotime.Time(join_time_py.hour, join_time_py.minute, join_time_py.second)
+    join_time = neotime.Time(join_time_py.hour, join_time_py.minute,
+                             join_time_py.second)
     # embed()
     tx.run(cyphercmd,
            username=str(info['username']).lower(),
@@ -85,12 +83,12 @@ def merge_userinfo(tx, info):
            background_image=info['background_image'],
            avatar=info['avatar'],
            url=info['url'],
-           location=info['location']
-    )
+           location=info['location'])
 
 
 def add_userinfo(s, info):
     s.write_transaction(merge_userinfo, info)
+
 
 def create_from_tweet(tx, tweet):
     cyphercmd = (
@@ -120,46 +118,42 @@ def create_from_tweet(tx, tweet):
     if tweet['quote_url'] != '':
         cyphercmd += ("MERGE (quoted_tweet:Tweet {link: $quote_url}) "
                       "MERGE (tweet)-[:QUOTES]->(quoted_tweet) ")
-    cyphercmd += (
-        """
+    cyphercmd += ("""
         FOREACH (mention in $mentions |
-        MERGE (muser:User {username: LOWER(mention)})
+        MERGE (muser:User {username: TOLOWER(mention)})
         MERGE (tweet)-[:MENTIONS]->(muser)
         )
         """
-        """
+                  """
         FOREACH (url in $urls |
         MERGE (curl:URL {address: url})
         MERGE (tweet)-[:HAS_URL]->(curl)
         )
         """
-        """
+                  """
         FOREACH (photo in $photos |
         MERGE (cphoto:Photo {photourl: photo})
         MERGE (tweet)-[:HAS_PHOTO]->(cphoto)
         )
         """
-        """
+                  """
         FOREACH (hashtag in $hashtags |
         MERGE (chtag:Hashtag {hashtag: hashtag})
         MERGE (tweet)-[:HAS_HASHTAG]->(chtag)
         )
         """
-        """
+                  """
         FOREACH (cashtag in $cashtags |
         MERGE (cctag:Cashtag {cashtag: cashtag})
         MERGE (tweet)-[:HAS_CASHTAG]->(cctag)
         )
         """
-        """
+                  """
         FOREACH (ruser in $reply_to |
-        MERGE (cuser:User {username: LOWER(ruser.username)})
+        MERGE (cuser:User {username: TOLOWER(ruser.username)})
         MERGE (tweet)-[:REPLIED_TO]->(cuser)
         )
-        """
-
-
-    )
+        """)
 
     time = neotime.gmtime(tweet['datetime'] / 1000)
     ntime = neotime.DateTime(time.tm_year, time.tm_mon, time.tm_mday,
@@ -194,7 +188,9 @@ def add_from_tweet(s, tweet):
 
 ### twint
 
-import sys
+driver = GraphDatabase.driver("bolt+routing://localhost:7687",
+                              auth=("neo4j", "changeme"))
+
 module = sys.modules["twint.storage.write"]
 
 
@@ -208,15 +204,27 @@ def Json(obj, config):
 
 module.Json = Json
 
-with driver.session() as s:
-    c = twint.Config()
-    username = args['<username>']
-    c.Username = username
-    c.Store_json = True
-    c.Output = "tweets.json"
-    c.Since = "2011-05-20"
-    c.Hide_output = True
-    if args['usertweets']:
-        twint.run.Search(c)
-    if args['userinfo']:
-        twint.run.Lookup(c)
+def twint2neo4j(iargs):
+    global args
+    args = iargs
+    if os.getenv('DEBUGME', '') != '':
+        print(args, file=sys.stderr)
+    with driver.session() as ses:
+        global s
+        s = ses
+        c = twint.Config()
+        username = args['<username>']
+        c.Username = username
+        c.Store_json = True
+        c.Output = "tweets.json"
+        c.Since = "2011-05-20"
+        c.Hide_output = True
+        if args['usertweets']:
+            twint.run.Search(c)
+        if args['userinfo']:
+            twint.run.Lookup(c)
+
+if __name__ == '__main__':
+    iargs = docopt(__doc__, version='t2n v0.1')
+    twint2neo4j(iargs)
+

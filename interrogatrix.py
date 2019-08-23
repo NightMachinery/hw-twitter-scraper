@@ -5,8 +5,8 @@ interrogatrix.py
 A highlevel API for our Twitter graph. Returns cypher queries.
 
 Usage:
- interrogatrix.py userinfo <username> [options]
- interrogatrix.py usertweets <username> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what> --ascending] [options]
+ interrogatrix.py userinfo <username> ... [options]
+ interrogatrix.py usertweets <username> ... [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what> --ascending] [options]
  interrogatrix.py show-node <id> [options]
  interrogatrix.py show-rel <id> [options]
  interrogatrix.py on-date <yyyy-mm-dd> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what>] [options]
@@ -23,7 +23,7 @@ Options:
   -n <a>, --return <a>  The number of results to return.
   -s <a>, --sort <a>  Sort by `date`, `like`, `retweet`, or `replies`.
   -a, --ascending  Change the sort order to ascending.
-  --cypher-shell  Output parameters suitable for cypher-shell's consumption (on stdout).
+  -e, --cypher-shell  Output parameters suitable for cypher-shell's consumption (on stdout).
 
 Examples:
   interrogatrix.py on-date 2019-08-29
@@ -63,7 +63,8 @@ def add_cypher(query, **kwargs):
         kwargs['count'] = f">= {kwargs['count']}"
     if query == "usertweets":
         cyph += (f"""
-            MATCH (user:User {{username: $username}})
+            MATCH (user:User)
+            WHERE TOLOWER(user.username) in [un in $username | TOLOWER(un)]
             MATCH tweet_rel=(tweet:Tweet)-[:TWEET_OF]->(user)
             """)
     elif query == 'on-date':
@@ -153,10 +154,10 @@ def add_params_str(**kwargs):
             if not value:
                 continue
             cyph += f"""
-            :param {key} => "{value}" ;"""
+            :param {key} => {json.dumps(value)} ;"""
         clean_cyph()
 
-add_params_str(username=args['<username>'].lower(), date=args['<yyyy-mm-dd>'], id=args['<id>'])
+add_params_str(username=args['<username>'], date=args['<yyyy-mm-dd>'], id=args['<id>'])
 if args['usertweets']:
     add_cypher('usertweets')
     add_extra_tweet()
@@ -169,8 +170,9 @@ elif args['on-date']:
     add_extra_tweet()
 elif args['userinfo']:
     cyph += f"""
-    MATCH (user:User {{username: $username}})
+    MATCH (user:User)
+    WHERE TOLOWER(user.username) in [un in $username | TOLOWER(un)]
     MATCH user_out=(user)-->()
-    RETURN user_out"""
+    RETURN user, user_out"""
 cyph += " ;"
 print(cyph)

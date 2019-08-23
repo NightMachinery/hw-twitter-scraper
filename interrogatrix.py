@@ -5,36 +5,39 @@ interrogatrix.py
 A highlevel API for our Twitter graph. Returns cypher queries.
 
 Usage:
- interrogatrix.py userinfo <username>
- interrogatrix.py usertweets <username> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what>]
- interrogatrix.py show-node <id>
- interrogatrix.py show-rel <id>
- interrogatrix.py on-date <yyyy-mm-dd> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what>]
+ interrogatrix.py userinfo <username> [options]
+ interrogatrix.py usertweets <username> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what> --ascending] [options]
+ interrogatrix.py show-node <id> [options]
+ interrogatrix.py show-rel <id> [options]
+ interrogatrix.py on-date <yyyy-mm-dd> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what>] [options]
  interrogatrix.py -h | --help
  interrogatrix.py --version
 
 Options:
-  -h --help     Show this screen.
-  --version     Show version.
-  -l, --limit-likes Limit like count. This will be injected directly into the query. You can,e.g., use `'> 150'`. If you use a number, interrogatrix will automagically change it to `'>= NUMBER'`.
-  -r, --limit-replies ↑
-  -w, --limit-retweets ↑
-  -c, --cypher-condition Allows you to add arbitrary cypher conditions.
-  -n, --return The number of results to return.
-  -s, --sort Sort by `like`, `retweet`, or `replies`.
+  -h --help  Show this screen.
+  --version  Show version.
+  -l <a>, --limit-likes <a>  Limit like count. This will be injected directly into the query. You can,e.g., use `'> 150'`. If you use a number, interrogatrix will automagically change it to `'>= NUMBER'`.
+  -r <a>, --limit-replies <a>  ↑
+  -w <a>, --limit-retweets <a>  ↑
+  -c <a>, --cypher-condition <a>  Allows you to add arbitrary cypher conditions.
+  -n <a>, --return <a>  The number of results to return.
+  -s <a>, --sort <a>  Sort by `date`, `like`, `retweet`, or `replies`.
+  -a, --ascending  Change the sort order to ascending.
+  --cypher-shell  Output parameters suitable for cypher-shell's consumption (on stdout).
 
 Examples:
   interrogatrix.py on-date 2019-08-29
   interrogatrix.py usertweets danieldennett --limit-retweets '> 10' --limit-likes '> 50' --limit-replies '> 10' -c 'tweet.created_at > datetime({year:2019,month:1})'
 
 Warning:
- There is a bug in the neo4j browser that makes us unable to set the parameters automatically. So, we print the parameters in a json dump format in stderr, and in the standard way in stdout. The standard way works in cypher-shell, but you'll have to manually use the json dump to set the params in the browser. (Just copy and paste it in the browser.)
+ There is a bug in the neo4j browser that makes us unable to set the parameters automatically. So, we print the parameters in a json dump format in stderr, and in the standard way in stdout (see --cypher-shell). The standard way works in cypher-shell, but you'll have to manually use the json dump to set the params in the browser. (Just copy and paste it in the browser.)
  You can upvote these tickets to help solve the problem:
  https://github.com/neo4j/neo4j-browser/issues/961
  https://github.com/neo4j-contrib/neo4j-apoc-procedures/issues/500
  https://github.com/neo4j/neo4j-browser/issues/693
 
 Todos:
+Add Python API
 Parametrize queries
 Make queries FOREACHy
 busiest-day
@@ -120,7 +123,10 @@ def add_sort():
         cyph += 'tweet.retweets_count'
     elif sort_by.startswith('reply') or sort_by.startswith('replies'):
         cyph += 'tweet.replies_count'
-    cyph += ' DESC'
+    elif sort_by.startswith('date'):
+        cyph += 'tweet.created_at'
+    if not args['--ascending']:
+        cyph += ' DESC'
 
 
 def add_limit():
@@ -140,13 +146,15 @@ def add_extra_tweet():
 
 def add_params_str(**kwargs):
     global cyph
-    print(":params " + json.dumps(kwargs), file=sys.stderr)
-    for key, value in kwargs.items():
-        if not value:
-            continue
-        cyph += f"""
-        :param {key} => "{value}" ;"""
-    clean_cyph()
+    if not args['--cypher-shell']:
+        print(":params " + json.dumps(kwargs), file=sys.stderr)
+    else:
+        for key, value in kwargs.items():
+            if not value:
+                continue
+            cyph += f"""
+            :param {key} => "{value}" ;"""
+        clean_cyph()
 
 add_params_str(username=args['<username>'].lower(), date=args['<yyyy-mm-dd>'], id=args['<id>'])
 if args['usertweets']:
@@ -163,6 +171,6 @@ elif args['userinfo']:
     cyph += f"""
     MATCH (user:User {{username: $username}})
     MATCH user_out=(user)-->()
-    return user_out"""
+    RETURN user_out"""
 cyph += " ;"
 print(cyph)

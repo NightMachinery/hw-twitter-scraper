@@ -5,6 +5,7 @@ interrogatrix.py
 A highlevel API for our Twitter graph. Returns cypher queries.
 
 Usage:
+ interrogatrix.py userinfo <username>
  interrogatrix.py usertweets <username> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what>]
  interrogatrix.py show-node <id>
  interrogatrix.py show-rel <id>
@@ -25,6 +26,15 @@ Options:
 Examples:
   interrogatrix.py on-date 2019-08-29
   interrogatrix.py usertweets danieldennett --limit-retweets '> 10' --limit-likes '> 50' --limit-replies '> 10' -c 'tweet.created_at > datetime({year:2019,month:1})'
+
+Todos:
+Parametrize queries
+Make queries FOREACHy
+busiest-day
+user-most-used-hashtag
+user-followings-most-used-hashtag
+get-mutuals
+user-most-interactions (Uses mutual mentions)
 """
 import sys, os, inspect
 from IPython import embed
@@ -44,12 +54,12 @@ def add_cypher(query, **kwargs):
     if query == "usertweets":
         username = kwargs['username']
         cyph += (f"""
-            MATCH (user:User {{username: "{username.lower()}"}})
+            MATCH (user:User {{username: $username}})
             MATCH tweet_rel=(tweet:Tweet)-[:TWEET_OF]->(user)
             """)
     elif query == 'on-date':
         cyph += f"""
-        MATCH (date:Date {{date: "{kwargs['date']}"}})
+        MATCH (date:Date {{date: $date}})
         MATCH tweet_rel=(tweet:Tweet)-[:ON_DATE]->(date)
         """
     elif query == "limit_likes":
@@ -64,13 +74,13 @@ def add_cypher(query, **kwargs):
     elif query == 'show-node':
         cyph += f"""
         MATCH (n)
-        WHERE ID(n) = {kwargs['id']}
+        WHERE ID(n) = $id
         RETURN n
         """
     elif query == 'show-rel':
         cyph += f"""
         MATCH r=()-[n]->()
-        WHERE ID(n) = {kwargs['id']}
+        WHERE ID(n) = $id
         RETURN r
         """
     cyph = inspect.cleandoc(cyph)
@@ -90,9 +100,11 @@ def add_tweet_constraints():
 
 
 def add_sort():
+    sort_by = args['--sort']
+    if not sort_by:
+        return 
     global cyph
     cyph += "\nORDER BY "
-    sort_by = args['--sort']
     if sort_by.startswith('like'):
         cyph += 'tweet.likes_count'
     elif sort_by.startswith('retweet'):
@@ -117,15 +129,28 @@ def add_extra_tweet():
     cyph += '\nMATCH tweet_out=(tweet)-->()'
     cyph += '\nRETURN tweet_rel, tweet_out '
 
+def add_params_str(**kwargs):
+    global cyph
+    for key, value in kwargs.iteritems():
+        if not value:
+            continue
+        cyph += f"""
+        :param {key} => "{value}" ;"""
 
 if args['usertweets']:
-    add_cypher('usertweets', username=args['<username>'])
+    add_cypher('usertweets')
     add_extra_tweet()
 elif args['show-rel']:
-    add_cypher('show-rel', id=args['<id>'])
+    add_cypher('show-rel')
 elif args['show-node']:
-    add_cypher('show-node', id=args['<id>'])
+    add_cypher('show-node')
 elif args['on-date']:
-    add_cypher('on-date', date=args['<yyyy-mm-dd>'])
+    add_cypher('on-date')
     add_extra_tweet()
+elif args['userinfo']:
+    cyph += f"""MATCH (user:User {{username: $username}}
+    MATCH user_out=(user)-->()
+    return user_out"""
+cyph += " ;"
+add_params_str(username=args['<username>'], date=args['<yyyy-mm-dd>'], id=args['<id>'])
 print(cyph + " ;")

@@ -27,6 +27,13 @@ Examples:
   interrogatrix.py on-date 2019-08-29
   interrogatrix.py usertweets danieldennett --limit-retweets '> 10' --limit-likes '> 50' --limit-replies '> 10' -c 'tweet.created_at > datetime({year:2019,month:1})'
 
+Warning:
+ There is a bug in the neo4j browser that makes us unable to set the parameters automatically. So, we print the parameters in a json dump format in stderr, and in the standard way in stdout. The standard way works in cypher-shell, but you'll have to manually use the json dump to set the params in the browser. (Just copy and paste it in the browser.)
+ You can upvote these tickets to help solve the problem:
+ https://github.com/neo4j/neo4j-browser/issues/961
+ https://github.com/neo4j-contrib/neo4j-apoc-procedures/issues/500
+ https://github.com/neo4j/neo4j-browser/issues/693
+
 Todos:
 Parametrize queries
 Make queries FOREACHy
@@ -36,7 +43,7 @@ user-followings-most-used-hashtag
 get-mutuals
 user-most-interactions (Uses mutual mentions)
 """
-import sys, os, inspect
+import sys, os, inspect, json
 from IPython import embed
 from docopt import docopt
 args = docopt(__doc__, version='interrogatrix v0.1')
@@ -52,7 +59,6 @@ def add_cypher(query, **kwargs):
     if kwargs.get('count') != None and kwargs['count'].isdigit():
         kwargs['count'] = f">= {kwargs['count']}"
     if query == "usertweets":
-        username = kwargs['username']
         cyph += (f"""
             MATCH (user:User {{username: $username}})
             MATCH tweet_rel=(tweet:Tweet)-[:TWEET_OF]->(user)
@@ -83,6 +89,9 @@ def add_cypher(query, **kwargs):
         WHERE ID(n) = $id
         RETURN r
         """
+    clean_cyph()
+def clean_cyph():
+    global cyph
     cyph = inspect.cleandoc(cyph)
 
 
@@ -131,12 +140,15 @@ def add_extra_tweet():
 
 def add_params_str(**kwargs):
     global cyph
-    for key, value in kwargs.iteritems():
+    print(":params " + json.dumps(kwargs), file=sys.stderr)
+    for key, value in kwargs.items():
         if not value:
             continue
         cyph += f"""
         :param {key} => "{value}" ;"""
+    clean_cyph()
 
+add_params_str(username=args['<username>'].lower(), date=args['<yyyy-mm-dd>'], id=args['<id>'])
 if args['usertweets']:
     add_cypher('usertweets')
     add_extra_tweet()
@@ -148,9 +160,9 @@ elif args['on-date']:
     add_cypher('on-date')
     add_extra_tweet()
 elif args['userinfo']:
-    cyph += f"""MATCH (user:User {{username: $username}}
+    cyph += f"""
+    MATCH (user:User {{username: $username}})
     MATCH user_out=(user)-->()
     return user_out"""
 cyph += " ;"
-add_params_str(username=args['<username>'], date=args['<yyyy-mm-dd>'], id=args['<id>'])
-print(cyph + " ;")
+print(cyph)

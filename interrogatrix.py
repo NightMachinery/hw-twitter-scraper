@@ -177,19 +177,26 @@ elif args['on-date']:
     add_cypher('on-date')
     add_extra_tweet()
 elif args['userinfo']:
-    cyph += f"""
+    cyph += """
     MATCH (user:User)
     WHERE user.username in [un in $username | TOLOWER(un)]
     OPTIONAL MATCH user_out=(user)-->(uc)
     WHERE NOT (user)-[:FOLLOWS]->(uc)
-    CALL apoc.path.subgraphNodes(user, {{relationshipFilter: 'FOLLOWS>', labelFilter: '/User', limit: $limit_followees}}) yield node as f1
-    CALL apoc.path.subgraphNodes(user, {{relationshipFilter: '<FOLLOWS', labelFilter: '/User', limit: $limit_followers}}) yield node as f2
+    WITH user, collect(user_out) as user_outs
+    CALL apoc.path.subgraphNodes(user, {relationshipFilter: 'FOLLOWS>', labelFilter: '/User', limit: $limit_followees}) yield node as f1
+    WITH user, user_outs, collect(f1) as f1s
+    CALL apoc.path.subgraphNodes(user, {relationshipFilter: '<FOLLOWS', labelFilter: '/User', limit: $limit_followers}) yield node as f2
+    WITH user, user_outs, f1s + collect(f2) as fs
     """
     if not args['--no-deep']:
         cyph += """
         OPTIONAL MATCH uc_out=(f0)-->()
-        WHERE f0 in [f1, f2]
+        WHERE f0 in fs
         """
-    cyph += """RETURN *"""
+    else:
+        cyph += """
+        WITH *, null as uc_out
+        """
+    cyph += """RETURN DISTINCT uc_out, user_outs, user, fs"""
 cyph += " ;"
 print(re.sub(r'^\s*', '', cyph, flags=re.M))

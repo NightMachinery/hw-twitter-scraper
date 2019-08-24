@@ -1,0 +1,13 @@
+version: '3'
+
+services:
+  hworker1:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - STH=sth
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh 77 77
+

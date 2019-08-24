@@ -9,10 +9,22 @@ services:
       - "5673:5672"
   worker:
     build: .
+    image: &img worker
+    command: [celery, worker, --concurrency=20, --app=scraper, --loglevel=INFO]
     links:
       - rabbit
     depends_on:
       - rabbit
+      - beat
     restart: on-failure
-volumes:
-  db:
+    volumes:
+      - .:/code/
+  beat:
+    build: .
+    image: *img
+    command: [celery, beat, --app=scraper, --loglevel=INFO]
+    depends_on:
+      - rabbit
+    restart: on-failure
+    volumes:
+      - .:/code/

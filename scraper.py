@@ -11,7 +11,7 @@ app = Celery(__name__, broker='amqp://admin:mypass@rabbit:5672', backend='rpc://
 @app.task(bind=True, exponential_backoff=2, retry_kwargs={'max_retries': 5}, retry_jitter=True)
 def get_user_posts(self, username):
     try:
-        subprocess.run(["python", "t2n.py", "usertweets", username])
+        subprocess.run(["python", "t2n.py", "usertweets", username], check=True)
     except Exception as exc:
         raise self.retry(exc=exc)
 
@@ -19,7 +19,7 @@ def get_user_posts(self, username):
 @app.task(bind=True, exponential_backoff=2, retry_kwargs={'max_retries': 5}, retry_jitter=True)
 def get_user_info(self, username):
     try:
-        subprocess.run(["python", "t2n.py", "userinfo", username])
+        subprocess.run(["python", "t2n.py", "userinfo", username], check=True)
     except Exception as exc:
         raise self.retry(exc=exc)
 
@@ -27,7 +27,7 @@ def get_user_info(self, username):
 @app.task(bind=True, exponential_backoff=2, retry_kwargs={'max_retries': 5}, retry_jitter=True)
 def get_user_follow_graph(self, username):
     try:
-        subprocess.run(["python", "t2n.py", "userfollowgraph", username])
+        subprocess.run(["python", "t2n.py", "userfollowgraph", username], check=True)
     except Exception as exc:
         raise self.retry(exc=exc)
 

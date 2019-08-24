@@ -49,3 +49,13 @@ RETURN u.username;"
 cypara() {
     parallel --verbose --max-args 1 --jobs ${cypara_j:-10} "$(realpath $commands[python3])" "$@"
 }
+cyrefresh() {
+    while true
+    do
+        local users="$(cygetbucket "$1" "$2")"
+        <<<$users cypara t2n.py usertweets
+        <<<$users cypara t2n.py userinfo
+        <<<$users cypara t2n.py userfollowgraph
+        sleep "${3:-0}"
+    done
+}

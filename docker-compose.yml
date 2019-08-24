@@ -1,4 +1,9 @@
 version: '3'
+
+networks:
+  lan:
+
+
 services:
   rabbit:
     image: rabbitmq:latest
@@ -14,5 +19,10 @@ services:
     depends_on:
       - rabbit
     restart: on-failure
-volumes:
-  db:
+  hworker1:
+    build: .  
+    environment:
+      - STH=sth
+    ports:
+      - 1080:1080
+    command: /bin/zsh

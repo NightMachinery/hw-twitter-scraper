@@ -12,7 +12,7 @@ If you want to use this via docker, build `hworkerDF2`:
 
 Then you can prefix all the following commands with `docker run --rm -it --net=host hworker zsh -c 'COMMAND HERE'`.
 
-First source `helpers.zsh` in your `zsh` session.
+First source `helpers.zsh` in your `zsh` session. (I have included some wrapper scripts which simply source `helpers.zsh` and call the desired function. Feel free to use those if that floats your boat.)
 
 Use `interrogatrix.py --help` to see its documentation. It is a highlevel API for creating cypher queries you can run against cypher-shell or the neo4j browser (Which is accessible on `http://localhost:7474/browser/` in our config).
 
@@ -26,7 +26,7 @@ See `t2n.py --help` for our twint-to-neo4j tool.
 
 Of note is `t2n.pt trackuser <username>` which marks that user to be tracked by us.
 
-Read the source of `helpers.zsh`, we provide some neat helpers there. E.g., you can use this oneliner to track all your followees:
+Read the source of `helpers.zsh`, I provide some neat helpers there. E.g., you can use this oneliner to track all your followees:
 
 `cygetfollowees your_username | cypara t2n.py trackuser`
 

@@ -6,6 +6,7 @@ A highlevel API for our Twitter graph. Returns cypher queries.
 
 Usage:
   interrogatrix.py userinfo <username> ... [--no-deep] [--limit-followees=<int>] [--limit-followers=<int>] [options]
+  interrogatrix.py simpleuserinfo <username> ... [options]
   interrogatrix.py mutuals <username> ... [options]
   interrogatrix.py usertweets <username> ... [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [(--sort=<by-what> [--ascending])] [options]
   interrogatrix.py show-node <id> [options]
@@ -16,6 +17,7 @@ Usage:
 
 Subcommands Description:
   mutuals: Returns people following and being followed by all the usernames specified.
+  userinfo: Returns a user, their metadata and their followers and followees (and optionally their metadata). Note that the current implementation fails to return anything if the user doesn't have at least a single follower and followee. Use simpleuserinfo for that.
 
 General Options:
   -h --help  Show this screen.
@@ -186,6 +188,14 @@ elif args['show-node']:
 elif args['on-date']:
     add_cypher('on-date')
     add_extra_tweet()
+elif args['simpleuserinfo']:
+    cyph += """
+    MATCH (user:User)
+    WHERE user.username in [un in $username | TOLOWER(un)]
+    OPTIONAL MATCH user_out=(user)-->(uc)
+    WHERE NOT (user)-[:FOLLOWS]->(uc)
+    RETURN DISTINCT user, user_out
+"""
 elif args['userinfo']:
     cyph += """
     MATCH (user:User)

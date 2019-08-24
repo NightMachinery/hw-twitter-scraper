@@ -3,6 +3,7 @@
 t2n; twint2neo4j; Scrapes Twitter and saves to neo4j.
 
 Usage:
+ t2n trackuser <username>
  t2n usertweets <username>
  t2n userinfo <username>
  t2n userfollowgraph <username>
@@ -14,6 +15,7 @@ Options:
   --version     Show version.
 """
 import sys, os, datetime
+import hashlib
 from docopt import docopt
 import urllib.parse
 import pytz
@@ -107,7 +109,6 @@ def create_from_tweet(tx, tweet):
     cyphercmd = (
         f"""
         MERGE (user:User {{username: $username}})
-        SET user += {{is_tracked: $is_tracked}}
         MERGE (tweet:Tweet {{link: $link}})
         {'SET tweet :Reply' if len(tweet['reply_to']) > 1 else ''}
         SET tweet += {{
@@ -173,7 +174,6 @@ def create_from_tweet(tx, tweet):
                              time.tm_hour, time.tm_min, time.tm_sec, pytz.utc)
     # embed()
     tx.run(cyphercmd,
-           is_tracked=True,
            mentions=tweet['mentions'],
            reply_to=tweet['reply_to'][1:],
            photos=tweet['photos'],
@@ -226,6 +226,23 @@ def get_last_scraped(s, username):
     res = s.read_transaction(get_last_scraped_tx, username)
     return res.value()[0]
 
+def track_user_tx(tx):
+    cyphercmd = (
+        f"""
+        MERGE (user:User {{username: $username}})
+        SET user += {{is_tracked: $is_tracked,
+        bucket: $bucket
+        }}
+        """)
+    tx.run(cyphercmd,
+           is_tracked=True,
+           bucket=bucket,
+           username=username)
+
+
+def track_user():
+    s.write_transaction(track_user_tx)
+
 ### twint
 
 driver = GraphDatabase.driver("bolt+routing://localhost:7687",
@@ -249,7 +266,7 @@ module.Json = Json
 
 
 def twint2neo4j(iargs):
-    global args, isFollowing, isFollower, s, username
+    global args, isFollowing, isFollower, s, username, bucket
     isFollower = False
     isFollowing = False
     args = iargs
@@ -257,6 +274,7 @@ def twint2neo4j(iargs):
         s = ses
         c = twint.Config()
         username = args['<username>'].lower()
+        bucket = int(hashlib.md5(username.encode('utf-8')).hexdigest(), 16) % 100
         c.Username = username
         c.Store_json = True
         c.Output = "tweets.json"
@@ -271,8 +289,11 @@ def twint2neo4j(iargs):
             print("args:\n" + repr(args) + f"""
             since: {since}
             c.Since: {c.Since}
+            bucket: {bucket}
             """, file=sys.stderr)
         # c.Hide_output = True
+        if args['trackuser']:
+            track_user()
         if args['usertweets']:
             twint.run.Search(c)
             today = datetime.datetime.today().strftime('%Y-%m-%d')

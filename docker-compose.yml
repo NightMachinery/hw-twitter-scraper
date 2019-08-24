@@ -20,7 +20,9 @@ services:
       - rabbit
     restart: on-failure
   hworker1:
-    build: .  
+    build:
+      context: ./
+      dockerfile: hworkerDF
     environment:
       - STH=sth
     ports:

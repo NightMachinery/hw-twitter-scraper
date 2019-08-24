@@ -49,6 +49,7 @@ user-most-interactions (Uses mutual mentions)
 import sys, os, inspect, json
 from IPython import embed
 from docopt import docopt
+
 args = docopt(__doc__, version='interrogatrix v0.1')
 if os.getenv('DEBUGME', '') != '':
     print(args, file=sys.stderr)
@@ -94,6 +95,8 @@ def add_cypher(query, **kwargs):
         RETURN r
         """
     clean_cyph()
+
+
 def clean_cyph():
     global cyph
     cyph = inspect.cleandoc(cyph)
@@ -115,7 +118,7 @@ def add_tweet_constraints():
 def add_sort():
     sort_by = args['--sort']
     if not sort_by:
-        return 
+        return
     global cyph
     cyph += "\nORDER BY "
     if sort_by.startswith('like'):
@@ -145,6 +148,7 @@ def add_extra_tweet():
     cyph += '\nMATCH tweet_out=(tweet)-->()'
     cyph += '\nRETURN tweet_rel, tweet_out '
 
+
 def add_params_str(**kwargs):
     global cyph
     if not args['--cypher-shell']:
@@ -156,6 +160,7 @@ def add_params_str(**kwargs):
             cyph += f"""
             :param {key} => {json.dumps(value)} ;"""
         clean_cyph()
+
 
 add_params_str(username=args['<username>'], date=args['<yyyy-mm-dd>'], id=args['<id>'])
 if args['usertweets']:

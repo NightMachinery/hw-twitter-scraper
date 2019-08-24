@@ -9,5 +9,5 @@ services:
       - STH=sth
     network_mode: "host"
     restart: always
-    command: zsh cyrefresh 77 77
+    command: zsh cyrefresh.zsh 77 77
 

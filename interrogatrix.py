@@ -70,7 +70,6 @@ user-most-interactions (Uses mutual mentions)
 import sys, os, re, json
 from IPython import embed
 from docopt import docopt
-
 args = docopt(__doc__, version='interrogatrix v0.1')
 if os.getenv('DEBUGME', '') != '':
     print(args, file=sys.stderr)
@@ -115,12 +114,6 @@ def add_cypher(query, **kwargs):
         WHERE ID(n) = $id
         RETURN r
         """
-    clean_cyph()
-
-
-def clean_cyph():
-    global cyph
-    cyph = inspect.cleandoc(cyph)
 
 
 def add_tweet_constraints():

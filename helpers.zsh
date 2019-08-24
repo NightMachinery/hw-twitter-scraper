@@ -35,7 +35,7 @@ cygetbucket() {
     local query=":param bstart => $bs ;
 :param bend => $be ;
 MATCH (u:User)
-WHERE u.bucket > \$bstart AND u.bucket < \$bend
+WHERE u.bucket >= \$bstart AND u.bucket <= \$bend
 RETURN u.username;"
     # color red $query
     local res="$(<<<$query cyph --format plain)"

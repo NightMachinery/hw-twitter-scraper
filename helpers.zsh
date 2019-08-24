@@ -53,12 +53,17 @@ cypara() {
     parallel --verbose --no-run-if-empty --max-args 1 --jobs ${cypara_j:-10} $proxy[@] "$(realpath $commands[python3])" "$@"
 }
 cyrefresh() {
+    local i=0
     while true
     do
+        i=$((i % 50))
         local users="$(cygetbucket "$1" "$2")"
         <<<$users cypara t2n.py usertweets
+        ((i == 0)) && {
         <<<$users cypara t2n.py userinfo
         <<<$users cypara t2n.py userfollowgraph
+        }
         sleep "${3:-0}"
+        i=$((i + 1))
     done
 }

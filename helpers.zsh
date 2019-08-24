@@ -46,3 +46,6 @@ RETURN u.username;"
         print -r -- "${i[2,-2]}"
     done
 }
+cypara() {
+    parallel --verbose --max-args 1 --jobs ${cypara_j:-10} "$(realpath $commands[python3])" "$@"
+}

@@ -6,7 +6,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 78 78
@@ -16,7 +16,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 77 77
@@ -26,7 +26,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 0 9
@@ -37,7 +37,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 0 9
@@ -47,7 +47,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 10 19
@@ -58,7 +58,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 10 19
@@ -68,7 +68,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 20 29
@@ -79,7 +79,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 20 29
@@ -89,7 +89,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 30 39
@@ -100,7 +100,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 30 39
@@ -110,7 +110,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 40 49
@@ -121,7 +121,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 40 49
@@ -131,7 +131,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 50 59
@@ -142,7 +142,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 50 59
@@ -152,7 +152,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 60 69
@@ -163,7 +163,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 60 69
@@ -173,7 +173,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 70 79
@@ -184,7 +184,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 70 79
@@ -194,7 +194,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 80 89
@@ -205,7 +205,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 80 89
@@ -215,7 +215,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 90 100
@@ -226,7 +226,7 @@ services:
       context: ./
       dockerfile: hworkerDF2
     environment:
-      - STH=sth
+      - cypara_j=5
     network_mode: "host"
     restart: always
     command: zsh cyrefresh.zsh 90 100

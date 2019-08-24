@@ -277,6 +277,10 @@ def twint2neo4j(iargs):
         c.Username = username
         c.Store_json = True
         c.Output = "tweets.json"
+        if os.getenv('TWINT_NO_PROXY', '') == '':
+            c.Proxy_host = "127.0.0.1"
+            c.Proxy_port = 1080
+            c.Proxy_type = "socks5"
         since = None
         try:
             since = get_last_scraped(s, username)

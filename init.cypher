@@ -14,4 +14,4 @@ CREATE CONSTRAINT ON (hashtag:Hashtag)
        ASSERT hashtag.hashtag IS UNIQUE ;
 CREATE CONSTRAINT ON (cashtag:Cashtag)
        ASSERT cashtag.cashtag IS UNIQUE ;
-CREATE INDEX ON :User(is_tracked) ;
+CREATE INDEX ON :User(bucket) ;

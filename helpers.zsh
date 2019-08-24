@@ -25,8 +25,40 @@ Returns (to stdout) people who <username> follows.' MAGIC
 "
     local res="$(cyph --format plain $query)"
     local i
-    for i in "${(@f)res[2,-1]}"
+    for i in "${(@)${(@f)res}[2,-1]}"
     do
         print -r -- "${i[2,-2]}"
+    done
+}
+cygetbucket() {
+    local bs="$1" be="$2"
+    local query=":param bstart => $bs ;
+:param bend => $be ;
+MATCH (u:User)
+WHERE u.bucket >= \$bstart AND u.bucket <= \$bend
+RETURN u.username;"
+    # color red $query
+    local res="$(<<<$query cyph --format plain)"
+    # color blue $res
+    local i
+    for i in "${(@)${(@f)res}[2,-1]}"
+    do
+        print -r -- "${i[2,-2]}"
+    done
+}
+cypara() {
+    local proxy
+    proxy=()
+    # [[ -z "$cypara_no_proxy" ]] && proxy=(proxychains4 -f proxychains.conf)
+    parallel --verbose --no-run-if-empty --max-args 1 --jobs ${cypara_j:-10} $proxy[@] "$(realpath $commands[python3])" "$@"
+}
+cyrefresh() {
+    while true
+    do
+        local users="$(cygetbucket "$1" "$2")"
+        <<<$users cypara t2n.py usertweets
+        <<<$users cypara t2n.py userinfo
+        <<<$users cypara t2n.py userfollowgraph
+        sleep "${3:-0}"
     done
 }

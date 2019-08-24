@@ -6,16 +6,20 @@ A highlevel API for our Twitter graph. Returns cypher queries.
 
 Usage:
   interrogatrix.py userinfo <username> ... [--no-deep] [--limit-followees=<int>] [--limit-followers=<int>] [options]
+  interrogatrix.py simpleuserinfo <username> ... [options]
   interrogatrix.py mutuals <username> ... [options]
   interrogatrix.py usertweets <username> ... [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [(--sort=<by-what> [--ascending])] [options]
   interrogatrix.py show-node <id> [options]
   interrogatrix.py show-rel <id> [options]
   interrogatrix.py on-date <yyyy-mm-dd> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [(--sort=<by-what> [--ascending])] [options]
+  interrogatrix.py show-shared-hashtags <username> [options]
   interrogatrix.py -h | --help
   interrogatrix.py --version
 
 Subcommands Description:
   mutuals: Returns people following and being followed by all the usernames specified.
+  userinfo: Returns a user, their metadata and their followers and followees (and optionally their metadata). Note that the current implementation fails to return anything if the user doesn't have at least a single follower and followee. Use simpleuserinfo for that.
+  show-shared-hashtags: Gets the hashtags that <username> has in common with their followers or followees.
 
 General Options:
   -h --help  Show this screen.
@@ -68,7 +72,6 @@ user-most-interactions (Uses mutual mentions)
 import sys, os, re, json
 from IPython import embed
 from docopt import docopt
-
 args = docopt(__doc__, version='interrogatrix v0.1')
 if os.getenv('DEBUGME', '') != '':
     print(args, file=sys.stderr)
@@ -113,12 +116,6 @@ def add_cypher(query, **kwargs):
         WHERE ID(n) = $id
         RETURN r
         """
-    clean_cyph()
-
-
-def clean_cyph():
-    global cyph
-    cyph = inspect.cleandoc(cyph)
 
 
 def add_tweet_constraints():
@@ -193,6 +190,14 @@ elif args['show-node']:
 elif args['on-date']:
     add_cypher('on-date')
     add_extra_tweet()
+elif args['simpleuserinfo']:
+    cyph += """
+    MATCH (user:User)
+    WHERE user.username in [un in $username | TOLOWER(un)]
+    OPTIONAL MATCH user_out=(user)-->(uc)
+    WHERE NOT (user)-[:FOLLOWS]->(uc)
+    RETURN DISTINCT user, user_out
+"""
 elif args['userinfo']:
     cyph += """
     MATCH (user:User)
@@ -225,6 +230,13 @@ elif args['mutuals']:
     MATCH fr=(m:User)-[:FOLLOWS]-(u:User {username: tolower(un)})
     WHERE all(user in $username WHERE (m)-[:FOLLOWS]->(:User {username: tolower(user)}) AND (m)<-[:FOLLOWS]-(:User {username: tolower(user)}))
     RETURN DISTINCT fr
+    """
+elif args['show-shared-hashtags']:
+    cyph += """
+    UNWIND $username as un
+    MATCH (u:User {username: un})-[:FOLLOWS]-(f:User)
+    MATCH r=(u)<-[:TWEET_OF]-()-[:HAS_HASHTAG]->(ht:Hashtag)<-[:HAS_HASHTAG]-()-[:TWEET_OF]->(f)
+    RETURN DISTINCT r
     """
 
 cyph += " ;"

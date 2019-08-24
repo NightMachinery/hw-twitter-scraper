@@ -1,0 +1,232 @@
+version: '3'
+
+services:
+  hworker78:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 78 78
+
+  hworker77:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 77 77
+
+  hworker0_9_a:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 0 9
+
+
+  hworker0_9_b:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 0 9
+
+  hworker10_19_a:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 10 19
+
+
+  hworker10_19_b:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 10 19
+
+  hworker20_29_a:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 20 29
+
+
+  hworker20_29_b:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 20 29
+
+  hworker30_39_a:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 30 39
+
+
+  hworker30_39_b:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 30 39
+
+  hworker40_49_a:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 40 49
+
+
+  hworker40_49_b:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 40 49
+
+  hworker50_59_a:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 50 59
+
+
+  hworker50_59_b:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 50 59
+
+  hworker60_69_a:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 60 69
+
+
+  hworker60_69_b:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 60 69
+
+  hworker70_79_a:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 70 79
+
+
+  hworker70_79_b:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 70 79
+
+  hworker80_89_a:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 80 89
+
+
+  hworker80_89_b:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 80 89
+
+  hworker90_100_a:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 90 100
+
+
+  hworker90_100_b:
+    build:
+      context: ./
+      dockerfile: hworkerDF2
+    environment:
+      - cypara_j=5
+    network_mode: "host"
+    restart: always
+    command: zsh cyrefresh.zsh 90 100

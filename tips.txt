@@ -1,2 +1,0 @@
-Use `parallel` to run lots of scrapers at the same time:
-    `parallel -n1 -j6 t2n.py userfollowgraph -- "${(@f)$(<a_r_khojasteh_followees)}"`

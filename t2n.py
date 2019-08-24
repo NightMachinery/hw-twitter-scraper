@@ -228,7 +228,7 @@ def get_last_scraped(s, username):
 
 ### twint
 
-driver = GraphDatabase.driver("bolt+routing://db:7687",
+driver = GraphDatabase.driver("bolt+routing://localhost:7687",
                               auth=("neo4j", "changeme"))
 module = sys.modules["twint.storage.write"]
 

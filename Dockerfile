@@ -4,6 +4,5 @@ RUN apk add --no-cache g++ musl-dev linux-headers libffi-dev openssl-dev python3
 COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
-RUN ["chmod", "+x", "./wait-for"]
 
 CMD celery -A scraper beat --loglevel=debug --max-interval 300

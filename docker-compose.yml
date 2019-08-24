@@ -1,0 +1,18 @@
+version: '3'
+services:
+  rabbit:
+    image: rabbitmq:latest
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=mypass
+    ports:
+      - "5673:5672"
+  worker:
+    build: .
+    links:
+      - rabbit
+    depends_on:
+      - rabbit
+    restart: on-failure
+volumes:
+  db:

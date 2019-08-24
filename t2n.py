@@ -247,7 +247,6 @@ def track_user():
 
 driver = GraphDatabase.driver("bolt+routing://localhost:7687",
                               auth=("neo4j", "changeme"))
-
 module = sys.modules["twint.storage.write"]
 
 

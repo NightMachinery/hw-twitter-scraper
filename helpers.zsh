@@ -25,7 +25,7 @@ Returns (to stdout) people who <username> follows.' MAGIC
 "
     local res="$(cyph --format plain $query)"
     local i
-    for i in "${(@f)res[2,-1]}"
+    for i in "${(@)${(@f)res}[2,-1]}"
     do
         print -r -- "${i[2,-2]}"
     done

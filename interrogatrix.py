@@ -5,21 +5,30 @@ interrogatrix.py
 A highlevel API for our Twitter graph. Returns cypher queries.
 
 Usage:
- interrogatrix.py userinfo <username> ... [--no-deep] [--limit-followees=<int>] [--limit-followers=<int>] [options]
- interrogatrix.py usertweets <username> ... [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what> --ascending] [options]
- interrogatrix.py show-node <id> [options]
- interrogatrix.py show-rel <id> [options]
- interrogatrix.py on-date <yyyy-mm-dd> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [--sort=<by-what>] [options]
- interrogatrix.py -h | --help
- interrogatrix.py --version
+  interrogatrix.py userinfo <username> ... [--no-deep] [--limit-followees=<int>] [--limit-followers=<int>] [options]
+  interrogatrix.py mutuals <username> ... [--no-deep] [--return=<count>] [--sort=<by-what>] [options]
+  interrogatrix.py usertweets <username> ... [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [(--sort=<by-what> [--ascending])] [options]
+  interrogatrix.py show-node <id> [options]
+  interrogatrix.py show-rel <id> [options]
+  interrogatrix.py on-date <yyyy-mm-dd> [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [(--sort=<by-what> [--ascending])] [options]
+  interrogatrix.py -h | --help
+  interrogatrix.py --version
+
+Subcommands Description:
+  mutuals: Returns people following and being followed by all the usernames specified.
 
 General Options:
   -h --help  Show this screen.
   --version  Show version.
   -e, --cypher-shell  Output parameters suitable for cypher-shell's consumption (on stdout).
 
-userinfo:
+Other Options:
   --no-deep  Hides out-rels of followers and followees.
+  -n <a>, --return <a>  The number of results to return.
+  -s <a>, --sort <a>  Sort by `date`, `like`, `retweet`, or `replies`.
+  -a, --ascending  Change the sort order to ascending.
+
+userinfo:
   --limit-followees <a>  Limits the number of returned followees. [default: 30]
   --limit-followers <a>  Limits the number of returned followers. [default: 30]
 
@@ -28,9 +37,6 @@ usertweets, on-date:
   -r <a>, --limit-replies <a>  ↑
   -w <a>, --limit-retweets <a>  ↑
   -c <a>, --cypher-condition <a>  Allows you to add arbitrary cypher conditions.
-  -n <a>, --return <a>  The number of results to return.
-  -s <a>, --sort <a>  Sort by `date`, `like`, `retweet`, or `replies`.
-  -a, --ascending  Change the sort order to ascending.
 
 
 Examples:
@@ -43,6 +49,9 @@ Warning:
  https://github.com/neo4j/neo4j-browser/issues/961
  https://github.com/neo4j-contrib/neo4j-apoc-procedures/issues/500
  https://github.com/neo4j/neo4j-browser/issues/693
+
+Cypher Tips:
+  You can combine the results of two queries by replacing the semicolon at the end of the first query with `UNION`. The queries need to return the same kind of things though.
 
 Todos:
 Support query chaining
@@ -198,5 +207,12 @@ elif args['userinfo']:
         WITH *, null as uc_out
         """
     cyph += """RETURN DISTINCT uc_out, user_outs, user, fs"""
+elif args['mutuals']:
+    cyph += """
+    UNWIND $username as un
+    MATCH fr=(m:User)-[:FOLLOWS]-(u:User {username: tolower(un)})
+    WHERE all(user in $username WHERE (m)-[:FOLLOWS]->(:User {username: tolower(user)}) AND (m)<-[:FOLLOWS]-(:User {username: tolower(user)}))
+    RETURN DISTINCT fr
+    """
 cyph += " ;"
 print(re.sub(r'^\s*', '', cyph, flags=re.M))

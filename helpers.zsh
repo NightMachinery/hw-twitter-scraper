@@ -1,7 +1,7 @@
 ## SOURCE ME
 ## Needs night.sh sourced first for some functions.
 
-addToPATH "$(realpath "${0:h}")"
+PATH="$(realpath "${0:h}"):$PATH"
 alias cyph='cypher-shell -u neo4j -p changeme -a "bolt+routing://localhost:7687"'
 alias cy='cyph  | color 255 140 10'
 cyn() { interrogatrix.py show-node -e "$@" | cyph }

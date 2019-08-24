@@ -47,7 +47,10 @@ RETURN u.username;"
     done
 }
 cypara() {
-    parallel --verbose --max-args 1 --jobs ${cypara_j:-10} "$(realpath $commands[python3])" "$@"
+    local proxy
+    proxy=()
+    [[ -z "$cypara_no_proxy" ]] && proxy=(proxychains4 -f proxychains.conf)
+    parallel --verbose --max-args 1 --jobs ${cypara_j:-10} $proxy[@] "$(realpath $commands[python3])" "$@"
 }
 cyrefresh() {
     while true

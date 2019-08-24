@@ -260,7 +260,11 @@ def twint2neo4j(iargs):
         c.Username = username
         c.Store_json = True
         c.Output = "tweets.json"
-        since = get_last_scraped(s, username)
+        since = None
+        try:
+            since = get_last_scraped(s, username)
+        except:
+            pass
         if since:
             c.Since = since
         if os.getenv('DEBUGME', '') != '':

@@ -1,4 +1,6 @@
-# SOURCE ME
+## SOURCE ME
+## Needs night.sh sourced first for some functions.
+
 addToPATH "$(realpath "${0:h}")"
 alias cyph='cypher-shell -u neo4j -p changeme -a "bolt+routing://localhost:7687"'
 alias cy='cyph  | color 255 140 10'
@@ -12,4 +14,19 @@ return photo.photourl")"
     re dvar res url
     aa --dir ./$1/ "$url"
     image ./$1/*
+}
+
+cygetfollowees() {
+    (($+aliases[mdocu])) && mdocu '<username>
+Returns (to stdout) people who <username> follows.' MAGIC
+    local query="
+    MATCH (m:User)<-[:FOLLOWS]-(u:User {username: tolower('$1')})
+    RETURN DISTINCT m.username
+"
+    local res="$(cyph --format plain $query)"
+    local i
+    for i in "${(@f)res[2,-1]}"
+    do
+        print -r -- "${i[2,-2]}"
+    done
 }

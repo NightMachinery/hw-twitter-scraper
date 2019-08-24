@@ -6,7 +6,7 @@ A highlevel API for our Twitter graph. Returns cypher queries.
 
 Usage:
   interrogatrix.py userinfo <username> ... [--no-deep] [--limit-followees=<int>] [--limit-followers=<int>] [options]
-  interrogatrix.py mutuals <username> ... [--no-deep] [--return=<count>] [--sort=<by-what>] [options]
+  interrogatrix.py mutuals <username> ... [options]
   interrogatrix.py usertweets <username> ... [--limit-likes=<comparison>] [--limit-replies=<comparison>] [--limit-retweets=<comparison>] [--cypher-condition=<cypher> ...] [--return=<count>] [(--sort=<by-what> [--ascending])] [options]
   interrogatrix.py show-node <id> [options]
   interrogatrix.py show-rel <id> [options]
@@ -54,6 +54,7 @@ Cypher Tips:
   You can combine the results of two queries by replacing the semicolon at the end of the first query with `UNION`. The queries need to return the same kind of things though.
 
 Todos:
+mutuals [--no-deep] [--return=<count>] [--sort=<by-what>]
 Support query chaining
 Add Python API
 Parametrize queries

@@ -208,11 +208,16 @@ elif args['userinfo']:
         """
     cyph += """RETURN DISTINCT uc_out, user_outs, user, fs"""
 elif args['mutuals']:
+    ## Alt implementation
+    # MATCH fr=(m:User)-[:FOLLOWS]-(u:User)
+    # WHERE all(user in $username WHERE (m)-[:FOLLOWS]->(:User {username: tolower(user)}) AND (m)<-[:FOLLOWS]-(:User {username: tolower(user)}))
+    # RETURN DISTINCT fr
     cyph += """
     UNWIND $username as un
     MATCH fr=(m:User)-[:FOLLOWS]-(u:User {username: tolower(un)})
     WHERE all(user in $username WHERE (m)-[:FOLLOWS]->(:User {username: tolower(user)}) AND (m)<-[:FOLLOWS]-(:User {username: tolower(user)}))
     RETURN DISTINCT fr
     """
+
 cyph += " ;"
 print(re.sub(r'^\s*', '', cyph, flags=re.M))

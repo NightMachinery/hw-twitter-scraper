@@ -13,7 +13,7 @@ Options:
   -h --help     Show this screen.
   --version     Show version.
 """
-import sys, os
+import sys, os, datetime
 from docopt import docopt
 import urllib.parse
 import pytz
@@ -198,6 +198,33 @@ def create_from_tweet(tx, tweet):
 def add_from_tweet(s, tweet):
     s.write_transaction(create_from_tweet, tweet)
 
+def set_last_scraped_tx(tx, username, date):
+    cyphercmd = (
+        f"""
+        MERGE (user:User {{username: $username}})
+        SET user += {{last_scraped: $date}}
+        """)
+    tx.run(cyphercmd,
+           date=date,
+           username=username)
+
+
+def set_last_scraped(s, username, date):
+    s.write_transaction(set_last_scraped_tx, username, date)
+
+def get_last_scraped_tx(tx, username):
+    cyphercmd = (
+        f"""
+        MATCH (user:User {{username: $username}})
+        RETURN user.last_scraped
+        """)
+    return tx.run(cyphercmd,
+           username=username)
+
+
+def get_last_scraped(s, username):
+    res = s.read_transaction(get_last_scraped_tx, username)
+    return res.value()[0]
 
 ### twint
 
@@ -226,23 +253,30 @@ def twint2neo4j(iargs):
     isFollower = False
     isFollowing = False
     args = iargs
-    if os.getenv('DEBUGME', '') != '':
-        print(args, file=sys.stderr)
     with driver.session() as ses:
         s = ses
         c = twint.Config()
-        username = args['<username>']
+        username = args['<username>'].lower()
         c.Username = username
         c.Store_json = True
         c.Output = "tweets.json"
-        c.Since = "2011-05-20"
-        c.Hide_output = True
-        c.User_full = True
+        since = get_last_scraped(s, username)
+        if since:
+            c.Since = since
+        if os.getenv('DEBUGME', '') != '':
+            print("args:\n" + repr(args) + f"""
+            since: {since}
+            c.Since: {c.Since}
+            """, file=sys.stderr)
+        # c.Hide_output = True
         if args['usertweets']:
             twint.run.Search(c)
+            today = datetime.datetime.today().strftime('%Y-%m-%d')
+            set_last_scraped(s, username, today)
         if args['userinfo']:
             twint.run.Lookup(c)
         if args['userfollowgraph']:
+            c.User_full = True
             isFollowing = True
             twint.run.Following(c)
             isFollowing = False

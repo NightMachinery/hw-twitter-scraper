@@ -245,17 +245,8 @@ def track_user():
 
 ### twint
 
-
-def resolve():
-    yield "core1", 7687
-    yield "core2", 7688
-    yield "core3", 7689
-    yield "core4", 7691
-    yield "read1", 7690
-
-
 driver = GraphDatabase.driver("bolt+routing://db:7687",
-                              auth=("neo4j", "changeme"), resolver=resolve)
+                              auth=("neo4j", "changeme"))
 module = sys.modules["twint.storage.write"]
 
 

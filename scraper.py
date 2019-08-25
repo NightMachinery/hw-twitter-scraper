@@ -40,9 +40,6 @@ def setup_periodic_tasks(sender, **kwargs):
     queue = ['realDonaldTrump']
     for i in range(0x100000000):
         user = queue.pop()
-        sender.add_periodic_task(crontab(minute='*/15'), get_user_posts.s(user))
-        sender.add_periodic_task(crontab(minute='*/15'), get_user_info.s(user))
-        sender.add_periodic_task(crontab(minute=0, hour=0), get_user_follow_graph.s(user))
         c = twint.Config
         c.User_full = True
         c.Hide_output = True
@@ -58,3 +55,7 @@ def setup_periodic_tasks(sender, **kwargs):
             if follower not in users:
                 users.add(follower)
                 queue.append(follower)
+    for user in users:
+        sender.add_periodic_task(900.0, get_user_posts.s(user))
+        sender.add_periodic_task(900.0, get_user_info.s(user))
+        sender.add_periodic_task(3600.0, get_user_follow_graph.s(user))

@@ -1,10 +1,12 @@
 import subprocess
 from celery import Celery
+from celery.schedules import crontab
 from celery.utils.log import get_task_logger
+import twint
 
 logger = get_task_logger(__name__)
 
-app = Celery(__name__, broker='amqp://admin:mypass@rabbit:5672', backend='rpc://',
+app = Celery(__name__, broker='amqp://admin:mypass@localhost:5672', backend='rpc://',
              include=['scraper'])
 
 
@@ -34,17 +36,25 @@ def get_user_follow_graph(self, username):
 
 @app.on_after_finalize.connect
 def setup_periodic_tasks(sender, **kwargs):
-    users = ['realDonaldTrump', 'aghossey']
-    for user in users:
-        sender.add_periodic_task(
-            60.0,
-            get_user_posts.s(user),
-        )
-        sender.add_periodic_task(
-            120.0,
-            get_user_info.s(user),
-        )
-        sender.add_periodic_task(
-            120.0,
-            get_user_follow_graph.s(user),
-        )
+    users = {'realDonaldTrump'}
+    queue = ['realDonaldTrump']
+    for i in range(0x100000000):
+        user = queue.pop()
+        sender.add_periodic_task(crontab(minute='*/15'), get_user_posts.s(user))
+        sender.add_periodic_task(crontab(minute='*/15'), get_user_info.s(user))
+        sender.add_periodic_task(crontab(minute=0, hour=0), get_user_follow_graph.s(user))
+        c = twint.Config
+        c.User_full = True
+        c.Hide_output = True
+        c.Store_object = True
+        c.Username = user
+        twint.run.Following(c)
+        for following in c.output.follows_list:
+            if following not in users:
+                users.add(following)
+                queue.append(following)
+        twint.run.Followers(c)
+        for follower in c.output.follows_list:
+            if follower not in users:
+                users.add(follower)
+                queue.append(follower)

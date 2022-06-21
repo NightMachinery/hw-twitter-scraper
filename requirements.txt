@@ -29,7 +29,7 @@ multidict==4.5.2
 neo4j==1.7.4
 neobolt==1.7.13
 neotime==1.7.4
-numpy==1.17.0
+numpy==1.22.0
 pandas==0.25.0
 parso==0.5.1
 pexpect==4.7.0
